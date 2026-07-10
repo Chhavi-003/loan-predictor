@@ -1,6 +1,7 @@
 import streamlit as st
 import pickle
 import pandas as pd
+import numpy as np
 
 st.set_page_config(page_title="SCF Credit Risk Evaluator", page_icon="💳", layout="centered")
 
@@ -93,23 +94,35 @@ try:
             late_map[late_choice]
         ]], columns=feature_names)
 
+        # 1. Calculate probabilities using built-in matrix extractor
+        probabilities = model.predict_proba(input_data)[0]
+        
+        # In SCF: 0 = Approved, 1 = Denied
+        approval_prob = probabilities[0] * 100
+        
+        # 2. Extract final hard classification label
         prediction = model.predict(input_data)[0]
 
-        # 0 = Safe/Approved, 1 = Turned Down/High Risk
+        st.markdown(f"### 🎯 Underwriting Score Assessment")
+
         if prediction == 0:
-            st.markdown("""
-                <div style='background-color: rgba(22, 163, 74, 0.25); border-left: 6px solid #22c55e; padding: 20px; border-radius: 12px; margin-top: 20px;'>
+            st.markdown(f"""
+                <div style='background-color: rgba(22, 163, 74, 0.25); border-left: 6px solid #22c55e; padding: 20px; border-radius: 12px; margin-top: 10px;'>
                     <h3 style='margin:0; color:#22c55e;'>✅ Credit Application Approved</h3>
-                    <p style='margin:5px 0 0 0; color:#bbf7d0;'>The risk score is well within institutional boundaries. Low default probability detected.</p>
+                    <p style='margin:5px 0 15px 0; color:#bbf7d0;'>The risk score is well within institutional boundaries. Low default probability detected.</p>
+                    <h2 style='margin:0; color:#ffffff;'>👍 Approval Probability: {approval_prob:.1f}%</h2>
                 </div>
             """, unsafe_allow_html=True)
+            st.progress(int(approval_prob))
         else:
-            st.markdown("""
-                <div style='background-color: rgba(239, 68, 68, 0.25); border-left: 6px solid #ef4444; padding: 20px; border-radius: 12px; margin-top: 20px;'>
+            st.markdown(f"""
+                <div style='background-color: rgba(239, 68, 68, 0.25); border-left: 6px solid #ef4444; padding: 20px; border-radius: 12px; margin-top: 10px;'>
                     <h3 style='margin:0; color:#ef4444;'>❌ Credit Application Denied</h3>
-                    <p style='margin:5px 0 0 0; color:#fecaca;'>Elevated delinquency flags or debt-to-income imbalances present an excessive risk profile.</p>
+                    <p style='margin:5px 0 15px 0; color:#fecaca;'>Elevated delinquency flags or debt-to-income imbalances present an excessive risk profile.</p>
+                    <h2 style='margin:0; color:#ffffff;'>👎 Approval Probability: {approval_prob:.1f}%</h2>
                 </div>
             """, unsafe_allow_html=True)
+            st.progress(int(approval_prob))
 
 except Exception as e:
     st.error(f"System Operational Error: {e}")
